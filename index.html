@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annuaire des DPO</title>
+<meta name="description" content="Trouver le délégué à la protection des données (DPO) d’un organisme, d’après les désignations déclarées à la CNIL.">
+<link rel="icon" href="data:,">
+<link rel="preload" href="fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face {
+  font-family: "Instrument Sans"; src: url(fonts/instrument-sans.woff2) format("woff2");
+  font-weight: 400 700; font-display: swap;
+}
+:root {
+  --bg: #ffffff; --surface: #f4f5f9; --ink: #13172c; --muted: #646a85; --rule: #e5e7ef;
+  --accent: #5a3fd6; --ring: rgb(90 63 214 / .18);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 1rem/1.55 "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+}
+main, footer { max-width: 62rem; margin: 0 auto; padding: 0 1.25rem; }
+a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+header { padding: clamp(2.5rem, 8vw, 5rem) 0 1.75rem; }
+h1 { font-size: clamp(2rem, 5vw, 2.75rem); line-height: 1.1; font-weight: 600; letter-spacing: -0.025em; margin: 0; }
+header p { margin: .6rem 0 0; color: var(--muted); font-size: 1.075rem; }
+
+.search { position: relative; }
+.search svg { position: absolute; left: 1.1rem; top: 50%; translate: 0 -50%; color: var(--muted); pointer-events: none; }
+#q {
+  display: block; width: 100%; height: 3.75rem; padding: 0 1rem 0 3.25rem;
+  font: inherit; font-size: 1.25rem; color: inherit; background: var(--bg);
+  border: 1px solid var(--rule); border-radius: 14px; outline: none;
+  box-shadow: 0 1px 2px rgb(19 23 44 / .05), 0 4px 16px rgb(19 23 44 / .04);
+}
+#q:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--ring); }
+#q::placeholder { color: var(--muted); opacity: .75; }
+.hint { min-height: 1.55em; margin: .55rem 0 1rem .25rem; color: var(--muted); font-size: .9rem; }
+
+.filters { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); gap: .6rem; align-items: center; }
+.seg { display: inline-flex; border: 0; margin: 0; padding: 3px; background: var(--surface); border-radius: 11px; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; }
+.seg span { display: block; padding: .4rem .85rem; border-radius: 8px; color: var(--muted); cursor: pointer; }
+.seg input:checked + span { background: var(--bg); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgb(19 23 44 / .12); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); }
+.field, .sort select, .pager button {
+  font: inherit; font-size: .95rem; color: var(--ink); background: var(--bg);
+  height: 2.5rem; padding: 0 .8rem; border: 1px solid var(--rule); border-radius: 10px;
+}
+select.field, .sort select {
+  appearance: none; padding-right: 2.2rem; text-overflow: ellipsis;
+  background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23646a85' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='m2 4.5 4 4 4-4'/%3E%3C/svg%3E") no-repeat right .8rem center;
+}
+.field:focus, .lieu:focus-within, .sort select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); outline: none; }
+.field { width: 100%; }
+.lieu { display: flex; align-items: center; gap: .5rem; color: var(--muted); }
+.lieu input { flex: 1; min-width: 0; font: inherit; color: var(--ink); background: none; border: 0; outline: none; padding: 0; }
+.lieu input::placeholder { color: var(--muted); opacity: .75; }
+
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.chips li:first-child { color: var(--muted); margin-right: .25rem; }
+.chips a { display: block; padding: .35rem .85rem; border-radius: 999px; background: var(--surface); color: var(--ink); text-decoration: none; font-size: .925rem; }
+.chips a:hover { background: var(--ring); }
+
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; margin: 2.25rem 0 .75rem; }
+#status { margin: 0; font-weight: 600; }
+#status.note { font-weight: 400; color: var(--muted); }
+.sort { color: var(--muted); font-size: .9rem; display: flex; align-items: center; gap: .5rem; }
+.sort[hidden] { display: none; }
+
+.list { list-style: none; margin: 0; padding: 0; }
+.item {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .9rem 2.5rem;
+  padding: 1.4rem 0; border-top: 1px solid var(--rule);
+}
+.item h2 { font-size: 1.075rem; line-height: 1.3; font-weight: 600; margin: 0 0 .3rem; overflow-wrap: anywhere; }
+.item p { margin: 0; }
+.meta { color: var(--muted); font-size: .9rem; }
+.dpo { background: var(--surface); border-radius: 14px; padding: 1rem 1.15rem; overflow-wrap: anywhere; }
+.dpo > .meta:first-child { margin-bottom: .4rem; }
+.firm { font-weight: 600; }
+.firm + .meta { margin-bottom: .4rem; }
+.item a { text-decoration: none; }
+.item a:hover { text-decoration: underline; }
+.mail { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.email { font-weight: 600; }
+.copy {
+  font: inherit; font-size: .8rem; color: var(--muted); background: var(--bg); cursor: pointer;
+  border: 1px solid var(--rule); border-radius: 999px; padding: .05rem .6rem;
+}
+.copy:hover { color: var(--ink); }
+@media (max-width: 40rem) {
+  .item { grid-template-columns: minmax(0, 1fr); }
+  .filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .seg, .lieu { grid-column: 1 / -1; }
+  .seg label { flex: 1; text-align: center; }
+}
+
+#results[aria-busy] { opacity: .45; }
+@media (prefers-reduced-motion: no-preference) { #results { transition: opacity .2s .15s; } }
+
+.pager { display: flex; align-items: center; gap: 1rem; margin: 1.75rem 0; color: var(--muted); }
+.pager button { cursor: pointer; padding: 0 1rem; }
+.pager button:disabled { opacity: .4; cursor: default; }
+
+footer { margin-top: 5rem; padding-bottom: 3rem; color: var(--muted); font-size: .85rem; }
+footer p { border-top: 1px solid var(--rule); padding-top: 1.25rem; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Trouvez le DPO d’un organisme</h1>
+    <p>Le délégué à la protection des données et le moyen de le joindre, d’après les désignations déclarées à la CNIL.</p>
+  </header>
+
+  <form id="f" role="search">
+    <div class="search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" name="q" type="search" placeholder="Nom, SIREN ou @domaine.fr" aria-label="Nom, SIREN ou e-mail" autocomplete="off" spellcheck="false" autofocus>
+    </div>
+    <p id="hint" class="hint"></p>
+
+    <div class="filters">
+      <fieldset class="seg">
+        <legend class="sr">Chercher le nom parmi</legend>
+        <label><input type="radio" name="dans" value="org" checked><span>Par organisme</span></label>
+        <label><input type="radio" name="dans" value="dpo"><span>Par DPO externe</span></label>
+      </fieldset>
+      <label class="field lieu">Lieu<input name="lieu" placeholder="ville, CP ou dépt" autocomplete="off"></label>
+      <select class="field" name="type" aria-label="Type de DPO">
+        <option value="">Tous les DPO</option>
+        <option>Personne physique</option>
+        <option>Personne morale</option>
+      </select>
+      <select class="field" name="secteur" aria-label="Secteur">
+        <option value="">Tous secteurs</option>
+        <option value="A">Agriculture, pêche</option>
+        <option value="B">Industries extractives</option>
+        <option value="C">Industrie manufacturière</option>
+        <option value="D">Énergie</option>
+        <option value="E">Eau, déchets</option>
+        <option value="F">Construction</option>
+        <option value="G">Commerce</option>
+        <option value="H">Transports</option>
+        <option value="I">Hébergement, restauration</option>
+        <option value="J">Information, communication</option>
+        <option value="K">Finance, assurance</option>
+        <option value="L">Immobilier</option>
+        <option value="M">Juridique, conseil, ingénierie</option>
+        <option value="N">Services administratifs</option>
+        <option value="O">Administration publique</option>
+        <option value="P">Enseignement</option>
+        <option value="Q">Santé, action sociale</option>
+        <option value="R">Arts, spectacles, loisirs</option>
+        <option value="S">Associations, autres services</option>
+        <option value="T">Particuliers employeurs</option>
+        <option value="U">Organismes extraterritoriaux</option>
+      </select>
+    </div>
+  </form>
+
+  <div class="bar">
+    <p id="status" tabindex="-1" aria-live="polite"></p>
+    <label class="sort" hidden>Trier par
+      <select form="f" name="tri">
+        <option value="">ordre du registre</option>
+        <option value="nom">nom, de A à Z</option>
+        <option value="date">désignation récente</option>
+      </select>
+    </label>
+  </div>
+
+  <section id="results">
+    <ul class="chips">
+      <li>Essayer</li>
+      <li><a href="?q=sncf">SNCF</a></li>
+      <li><a href="?q=780129987">780129987</a></li>
+      <li><a href="?q=%40renault.com">@renault.com</a></li>
+      <li><a href="?q=adnov&amp;dans=dpo">Clients du cabinet Adnov</a></li>
+      <li><a href="?lieu=69&amp;secteur=Q">Santé dans le Rhône</a></li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <p>Données : <a href="https://www.data.gouv.fr/datasets/organismes-ayant-designe-un-e-delegue-e-a-la-protection-des-donnees-dpd-dpo">organismes ayant désigné un DPO</a> (CNIL, Licence Ouverte), via l’API tabulaire de data.gouv.fr. Site non officiel, <a href="https://github.com/cleming/chercher-un-dpo">code source</a>.</p>
+</footer>
+
+<script type="module">
+import { buildQuery, PAGE_SIZE } from './query.js';
+
+const form = document.getElementById('f');
+const hint = document.getElementById('hint');
+const status = document.getElementById('status');
+const sort = document.querySelector('.sort');
+const out = document.getElementById('results');
+const intro = out.innerHTML;
+let page = 1, timer, ctrl;
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+const nb = n => n.toLocaleString('fr-FR');
+const link = (href, text, cls) => `<a href="${esc(href)}"${cls ? ` class="${cls}"` : ''}>${esc(text)}</a>`;
+const mail = m => `<span class="mail">${link('mailto:' + m, m, 'email')}<button type="button" class="copy" data-copy="${esc(m)}">Copier</button></span>`;
+const place = (addr, cp, city) => [addr, addr?.includes(cp) ? '' : [cp, city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+
+function siren(s) {
+  if (!/^\d{9}$/.test(s || '')) return '';
+  return `<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/${s}" title="Fiche sur l’Annuaire des entreprises">SIREN ${s.replace(/(\d{3})(?=\d)/g, '$1 ')}</a>`;
+}
+
+function phone(t) {
+  const d = t.replace(/\D/g, '');
+  return link('tel:' + t.replace(/[^\d+]/g, ''), /^0\d{9}$/.test(d) ? d.replace(/(\d{2})(?=\d)/g, '$1 ') : t);
+}
+
+function web(u) {
+  u = u.trim();
+  if (/^[^\s/]+@[^\s/]+$/.test(u)) return mail(u);
+  const href = /^https?:\/\//i.test(u) ? u : /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(u) ? 'https://' + u : null;
+  return href ? link(href, u.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')) : esc(u);
+}
+
+function row(r) {
+  const o = c => r[`${c} organisme désignant`], d = c => r[`${c} organisme désigné`], m = c => r[`Moyen contact DPO ${c}`];
+  const date = r['Date de la désignation'] && new Date(r['Date de la désignation'])
+    .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const contact = [
+    m('email') && mail(m('email')),
+    m('url') && web(m('url')),
+    m('téléphone') && phone(m('téléphone')),
+    esc(place(m('adresse postale'), m('code postal'), m('ville'))),
+    esc(m('autre')),
+  ].filter(Boolean);
+  return `<li class="item">
+    <div>
+      <h2>${esc(o('Nom'))}</h2>
+      <p class="meta">${[siren(o('SIREN')), o('Code NAF') && 'NAF ' + esc(o('Code NAF'))].filter(Boolean).join(', ')}</p>
+      <p class="meta">${esc(place(o('Adresse postale'), o('Code postal'), o('Ville')))}</p>
+    </div>
+    <div class="dpo">
+      <p class="meta">DPO ${esc((r['Type de DPO'] || '').toLowerCase())}${date ? `, désigné le ${date}` : ''}</p>
+      ${d('Nom') ? `<p class="firm">${esc(d('Nom'))}</p><p class="meta">${siren(d('SIREN'))}</p>` : ''}
+      ${contact.length ? contact.map(c => `<p>${c}</p>`).join('') : '<p class="meta">Aucun moyen de contact publié.</p>'}
+    </div>
+  </li>`;
+}
+
+function show(text, note) {
+  status.textContent = text;
+  status.classList.toggle('note', !!note);
+}
+
+function render({ data, meta }) {
+  sort.hidden = meta.total < 2;
+  if (!meta.total) {
+    show('Aucun organisme ne correspond. Vérifiez l’orthographe, ou retirez un mot ou un filtre.', true);
+    out.innerHTML = '';
+    return;
+  }
+  const pages = Math.ceil(meta.total / PAGE_SIZE);
+  show(`${nb(meta.total)} organisme${meta.total > 1 ? 's' : ''}`);
+  out.innerHTML = `<ul class="list">${data.map(row).join('')}</ul>
+    ${pages > 1 ? `<nav class="pager" aria-label="Pages de résultats">
+      <button type="button" data-step="-1"${page <= 1 ? ' disabled' : ''}>Précédents</button>
+      <span>Page ${nb(page)} sur ${nb(pages)}</span>
+      <button type="button" data-step="1"${page >= pages ? ' disabled' : ''}>Suivants</button>
+    </nav>` : ''}`;
+}
+
+function syncUrl(f) {
+  const s = Object.entries(f).filter(([k, v]) => v && !(k === 'dans' && v === 'org'));
+  if (page > 1) s.push(['page', page]);
+  history.replaceState(null, '', s.length ? '?' + new URLSearchParams(s) : location.pathname);
+}
+
+async function run() {
+  const f = Object.fromEntries(new FormData(form));
+  const query = buildQuery(f, page);
+  syncUrl(f);
+  hint.textContent = query?.hint || '';
+  ctrl?.abort();
+  if (!query) { show(''); sort.hidden = true; out.innerHTML = intro; return; }
+  const c = ctrl = new AbortController();
+  out.setAttribute('aria-busy', 'true');
+  try {
+    const res = await fetch(query.url, { signal: c.signal });
+    if (!res.ok) throw new Error(res.status);
+    render(await res.json());
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    show('data.gouv.fr ne répond pas pour le moment. Relancez la recherche dans quelques secondes.', true);
+    out.innerHTML = '';
+  } finally {
+    if (c === ctrl) out.removeAttribute('aria-busy');
+  }
+}
+
+function load(params) {
+  form.reset();
+  for (const [k, v] of params) if (form.elements[k]) form.elements[k].value = v;
+  page = Math.max(1, parseInt(params.get('page')) || 1);
+  run();
+}
+
+document.addEventListener('input', e => {
+  if (e.target.form !== form) return;
+  page = 1; clearTimeout(timer); timer = setTimeout(run, 300);
+});
+form.addEventListener('submit', e => { e.preventDefault(); page = 1; clearTimeout(timer); run(); });
+out.addEventListener('click', async e => {
+  const chip = e.target.closest('.chips a');
+  const copy = e.target.closest('[data-copy]');
+  const step = e.target.closest('[data-step]');
+  if (chip) {
+    e.preventDefault();
+    load(new URL(chip.href).searchParams);
+  } else if (copy) {
+    await navigator.clipboard.writeText(copy.dataset.copy);
+    copy.textContent = 'Copié';
+    setTimeout(() => copy.textContent = 'Copier', 1500);
+  } else if (step) {
+    page += +step.dataset.step;
+    await run();
+    status.focus();
+  }
+});
+load(new URLSearchParams(location.search));
+</script>
+</body>
+</html>
