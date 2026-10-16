@@ -20,16 +20,19 @@
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
+  min-height: 100dvh; display: flex; flex-direction: column;
   font: 1rem/1.55 "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
   font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
 }
-main, footer { max-width: 62rem; margin: 0 auto; padding: 0 1.25rem; }
+main, footer { width: 100%; max-width: 62rem; margin: 0 auto; padding: 0 1.25rem; }
+main { flex: 1; }
 a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 header { padding: clamp(2.5rem, 8vw, 5rem) 0 1.75rem; }
 h1 { font-size: clamp(2rem, 5vw, 2.75rem); line-height: 1.1; font-weight: 600; letter-spacing: -0.025em; margin: 0; }
+h1 a { color: inherit; text-decoration: none; }
 header p { margin: .6rem 0 0; color: var(--muted); font-size: 1.075rem; }
 
 .search { position: relative; }
@@ -55,9 +58,11 @@ header p { margin: .6rem 0 0; color: var(--muted); font-size: 1.075rem; }
   font: inherit; font-size: .95rem; color: var(--ink); background: var(--bg);
   height: 2.5rem; padding: 0 .8rem; border: 1px solid var(--rule); border-radius: 10px;
 }
-select.field, .sort select {
-  appearance: none; padding-right: 2.2rem; text-overflow: ellipsis;
-  background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23646a85' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='m2 4.5 4 4 4-4'/%3E%3C/svg%3E") no-repeat right .8rem center;
+select.field, .sort select { appearance: none; padding-right: 2.2rem; text-overflow: ellipsis; }
+.pick { position: relative; }
+.pick::after {
+  content: ""; position: absolute; right: .8rem; top: 50%; width: 12px; height: 12px; translate: 0 -50%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23646a85' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='m2 4.5 4 4 4-4'/%3E%3C/svg%3E"); pointer-events: none;
 }
 .field:focus, .lieu:focus-within, .sort select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); outline: none; }
 .field { width: 100%; }
@@ -97,7 +102,7 @@ select.field, .sort select {
   border: 1px solid var(--rule); border-radius: 999px; padding: .05rem .6rem;
 }
 .copy:hover { color: var(--ink); }
-@media (max-width: 40rem) {
+@media (max-width: 52rem) {
   .item { grid-template-columns: minmax(0, 1fr); }
   .filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .seg, .lieu { grid-column: 1 / -1; }
@@ -105,7 +110,7 @@ select.field, .sort select {
 }
 
 #results[aria-busy] { opacity: .45; }
-@media (prefers-reduced-motion: no-preference) { #results { transition: opacity .2s .15s; } }
+@media (prefers-reduced-motion: no-preference) { #results[aria-busy] { transition: opacity .2s .15s; } }
 
 .pager { display: flex; align-items: center; gap: 1rem; margin: 1.75rem 0; color: var(--muted); }
 .pager button { cursor: pointer; padding: 0 1rem; }
@@ -118,7 +123,7 @@ footer p { border-top: 1px solid var(--rule); padding-top: 1.25rem; }
 <body>
 <main>
   <header>
-    <h1>Trouvez le DPO d’un organisme</h1>
+    <h1><a href="./">Trouvez le DPO d’un organisme</a></h1>
     <p>Le délégué à la protection des données et le moyen de le joindre, d’après les désignations déclarées à la CNIL.</p>
   </header>
 
@@ -136,12 +141,12 @@ footer p { border-top: 1px solid var(--rule); padding-top: 1.25rem; }
         <label><input type="radio" name="dans" value="dpo"><span>Par DPO externe</span></label>
       </fieldset>
       <label class="field lieu">Lieu<input name="lieu" placeholder="ville, CP ou dépt" autocomplete="off"></label>
-      <select class="field" name="type" aria-label="Type de DPO">
+      <span class="pick"><select class="field" name="type" aria-label="Type de DPO">
         <option value="">Tous les DPO</option>
         <option>Personne physique</option>
         <option>Personne morale</option>
-      </select>
-      <select class="field" name="secteur" aria-label="Secteur">
+      </select></span>
+      <span class="pick"><select class="field" name="secteur" aria-label="Secteur">
         <option value="">Tous secteurs</option>
         <option value="A">Agriculture, pêche</option>
         <option value="B">Industries extractives</option>
@@ -164,18 +169,18 @@ footer p { border-top: 1px solid var(--rule); padding-top: 1.25rem; }
         <option value="S">Associations, autres services</option>
         <option value="T">Particuliers employeurs</option>
         <option value="U">Organismes extraterritoriaux</option>
-      </select>
+      </select></span>
     </div>
   </form>
 
   <div class="bar">
     <p id="status" tabindex="-1" aria-live="polite"></p>
     <label class="sort" hidden>Trier par
-      <select form="f" name="tri">
+      <span class="pick"><select form="f" name="tri">
         <option value="">ordre du registre</option>
         <option value="nom">nom, de A à Z</option>
         <option value="date">désignation récente</option>
-      </select>
+      </select></span>
     </label>
   </div>
 
