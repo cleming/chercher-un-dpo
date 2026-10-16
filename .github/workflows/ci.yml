@@ -1,0 +1,17 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: node query.test.mjs
+      - run: python3 -m http.server 8080 &
+      - run: npx -y pa11y-ci@4.1.1

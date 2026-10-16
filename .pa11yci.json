@@ -1,0 +1,16 @@
+{
+  "defaults": {
+    "runners": ["axe"],
+    "timeout": 30000,
+    "chromeLaunchConfig": { "args": ["--no-sandbox"] }
+  },
+  "urls": [
+    "http://localhost:8080/",
+    { "url": "http://localhost:8080/?q=sncf", "actions": ["wait for element .item to be visible"] },
+    {
+      "url": "http://localhost:8080/?q=adnov&dans=dpo&lieu=69",
+      "viewport": { "width": 390, "height": 844 },
+      "actions": ["wait for element .item to be visible"]
+    }
+  ]
+}
